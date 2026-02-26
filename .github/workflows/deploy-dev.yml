@@ -66,19 +66,39 @@ jobs:
       - name: Build Project
         run: npm run build
 
-      #      - name: Create .env file
-      #        run: |
-      #          cat > .env << EOL
-      #          GOOGLE_AUTH_CLIENT_ID=${{ secrets.GOOGLE_AUTH_CLIENT_ID }}
-      #          GOOGLE_AUTH_CLIENT_SECRET=${{ secrets.GOOGLE_AUTH_CLIENT_SECRET }}
-      #          GOOGLE_AUTH_REDIRECT_URL=${{ secrets.GOOGLE_AUTH_REDIRECT_URL }}
-      #          EOL
+      - name: Create .env file
+        run: |
+          cat > .env << 'ENVEOF'
+          APP_URL=${{ secrets.APP_URL }}
+          APP_NAME=${{ secrets.APP_NAME }}
+          HOST=${{ secrets.HOST }}
+          PORT=${{ secrets.PORT }}
+          NBU_API_URL=${{ secrets.NBU_API_URL }}
+          CLIENT_URL=${{ secrets.CLIENT_URL }}
+          JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}
+          JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+          DB_TYPE=${{ secrets.DB_TYPE }}
+          DB_HOST=${{ secrets.DB_HOST }}
+          DB_PORT=${{ secrets.DB_PORT }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          DB_NAME=${{ secrets.DB_NAME }}
+          SWAGGER_HTTP_BASIC_AUTH_USERNAME=${{ secrets.SWAGGER_HTTP_BASIC_AUTH_USERNAME }}
+          SWAGGER_HTTP_BASIC_AUTH_PASSWORD=${{ secrets.SWAGGER_HTTP_BASIC_AUTH_PASSWORD }}
+          GOOGLE_AUTH_CLIENT_ID=${{ secrets.GOOGLE_AUTH_CLIENT_ID }}
+          GOOGLE_AUTH_CLIENT_SECRET=${{ secrets.GOOGLE_AUTH_CLIENT_SECRET }}
+          GOOGLE_AUTH_REDIRECT_URL=${{ secrets.GOOGLE_AUTH_REDIRECT_URL }}
+          SMTP_HOST=${{ secrets.SMTP_HOST }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_EMAIL_PASSWORD=${{ secrets.SMTP_EMAIL_PASSWORD }}
+          ENVEOF
+          sed -i 's/^[[:space:]]*//' .env
 
       - name: Deploy Project
         uses: burnett01/rsync-deployments@5.2.1
         with:
           switches: -avz
-          path: ./package*.json ./dist  ./node_modules
+          path: ./package*.json ./dist ./node_modules ./.env
           remote_host: ${{ secrets.DEV_REMOTE_HOST }}
           remote_user: ${{ secrets.DEV_REMOTE_USER }}
           remote_key: ${{ secrets.DEV_REMOTE_KEY }}
