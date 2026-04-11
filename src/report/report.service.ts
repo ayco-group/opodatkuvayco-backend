@@ -1,13 +1,17 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NormalizeReportsService } from '../normalizeReports/normalizeReports.service';
 import { GroupedTrades } from './types/interfaces/trade.interface';
-import { DealReport } from './types/interfaces/deal-report.interface';
 import { Deal } from './types/interfaces/deal.interface';
 import {
   AccounAtStartType,
   ReportFromPreviousPeriod,
 } from './types/interfaces/report.interface';
-import { MILITARY_FEE, TAX_FEE } from './consts/tax-fee-percentages';
+import {
+  DEFAULT_DEALS_MILITARY_FEE,
+  DEFAULT_DEALS_TAX_FEE,
+  TAX_CONFIG_KEYS,
+} from './consts/tax-fee-percentages';
 import { DealsService } from '../deals/deals.service';
 import { User } from 'src/user/entities/user.entity';
 import { StockExchangeEnum } from 'src/normalizeTrades/constants/enums';
@@ -19,12 +23,25 @@ import { DividendReport } from './types/interfaces/dividend.interface';
 
 @Injectable()
 export class ReportService {
+  private readonly dealsTaxFee: number;
+  private readonly dealsMilitaryFee: number;
+
   constructor(
     private reportRepositoryService: ReportRepositoryService,
     private normalizeReportsService: NormalizeReportsService,
     private dealsService: DealsService,
     private dividendService: DividendService,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    this.dealsTaxFee = this.configService.get<number>(
+      TAX_CONFIG_KEYS.DEALS_TAX_FEE,
+      DEFAULT_DEALS_TAX_FEE,
+    );
+    this.dealsMilitaryFee = this.configService.get<number>(
+      TAX_CONFIG_KEYS.DEALS_MILITARY_FEE,
+      DEFAULT_DEALS_MILITARY_FEE,
+    );
+  }
 
   getTradesReport(file: Express.Multer.File, stockExchange: StockExchangeEnum) {
     const { trades, accountAtStart, accountAtEnd, dateStart } =
@@ -65,7 +82,7 @@ export class ReportService {
     return deals.reduce((acc, deal) => acc + deal.total, 0);
   }
 
-  getSummary(deals: Deal[]) {
+  getSummary(deals: Deal[], dividendReport?: DividendReport) {
     const total = this.getTotalValue(deals);
 
     return {
@@ -73,6 +90,7 @@ export class ReportService {
       totalTaxFee: this.getTotalTaxFee(total),
       totalMilitaryFee: this.getMilitaryFee(total),
       deals: this.sortDeals(deals),
+      dividends: dividendReport ?? null,
     };
   }
 
@@ -158,7 +176,13 @@ export class ReportService {
 
     const deals = await tradeService.getDeals();
 
-    return this.getSummary(deals);
+    // Process dividends from all files
+    const dividendReport = await this.processDividendsFromFiles(
+      files,
+      stockExchange,
+    );
+
+    return this.getSummary(deals, dividendReport);
   }
 
   async processDemoReport({
@@ -179,48 +203,52 @@ export class ReportService {
     return deals;
   }
 
-  async processDividendReport({
-    file,
-    stockExchange,
-  }: {
-    file: Express.Multer.File;
-    stockExchange: StockExchangeEnum;
-  }): Promise<DividendReport> {
+  private async processDividendsFromFiles(
+    files: Express.Multer.File[],
+    stockExchange: StockExchangeEnum,
+  ): Promise<DividendReport | null> {
     if (stockExchange !== StockExchangeEnum.FREEDOM_FINANCE) {
-      throw new BadRequestException(
-        'Dividend reports are currently only supported for Freedom Finance',
-      );
+      return null;
     }
 
-    const { corporateActions } =
-      this.normalizeReportsService.getDividendsByStockExchange(
-        file,
-        stockExchange,
-      );
+    const allDividends = await Promise.all(
+      files.map(async (file) => {
+        const { corporateActions } =
+          this.normalizeReportsService.getDividendsByStockExchange(
+            file,
+            stockExchange,
+          );
 
-    const dividends =
-      await this.dividendService.processDividends(corporateActions);
+        return this.dividendService.processDividends(corporateActions);
+      }),
+    );
 
-    return this.dividendService.calculateDividendReport(dividends);
+    const flatDividends = allDividends.flat();
+
+    if (flatDividends.length === 0) {
+      return null;
+    }
+
+    return this.dividendService.calculateDividendReport(flatDividends);
   }
 
   async getReports(userId: User['id']) {
     return await this.reportRepositoryService.getReports(userId);
   }
 
-  private getTotalTaxFee(total: DealReport<Deal>['total']) {
+  private getTotalTaxFee(total: number) {
     if (total <= 0) {
       return 0;
     }
 
-    return total * TAX_FEE;
+    return total * this.dealsTaxFee;
   }
 
-  private getMilitaryFee(total: DealReport<Deal>['total']) {
+  private getMilitaryFee(total: number) {
     if (total <= 0) {
       return 0;
     }
 
-    return total * MILITARY_FEE;
+    return total * this.dealsMilitaryFee;
   }
 }
