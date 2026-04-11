@@ -16,6 +16,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Report } from './entities/report.entity';
 import { TradeModule } from 'src/trade/trade.module';
 import { ReportRepositoryService } from './reportRepository.service';
+import { DividendService } from './dividend.service';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { ReportRepositoryService } from './reportRepository.service';
     NormalizeReportsService,
     ReportReaderService,
     DateTimeFormatService,
+    DividendService,
   ],
 })
 export class ReportModule {}

@@ -14,6 +14,8 @@ import { StockExchangeEnum } from 'src/normalizeTrades/constants/enums';
 import { TradeService } from 'src/trade/trade.service';
 import { mergeDeepWith, concat, pipe, map, sort } from 'ramda';
 import { ReportRepositoryService } from './reportRepository.service';
+import { DividendService } from './dividend.service';
+import { DividendReport } from './types/interfaces/dividend.interface';
 
 @Injectable()
 export class ReportService {
@@ -21,6 +23,7 @@ export class ReportService {
     private reportRepositoryService: ReportRepositoryService,
     private normalizeReportsService: NormalizeReportsService,
     private dealsService: DealsService,
+    private dividendService: DividendService,
   ) {}
 
   getTradesReport(file: Express.Multer.File, stockExchange: StockExchangeEnum) {
@@ -174,6 +177,31 @@ export class ReportService {
     const deals = await tradeService.getDemoTrades();
 
     return deals;
+  }
+
+  async processDividendReport({
+    file,
+    stockExchange,
+  }: {
+    file: Express.Multer.File;
+    stockExchange: StockExchangeEnum;
+  }): Promise<DividendReport> {
+    if (stockExchange !== StockExchangeEnum.FREEDOM_FINANCE) {
+      throw new BadRequestException(
+        'Dividend reports are currently only supported for Freedom Finance',
+      );
+    }
+
+    const { corporateActions } =
+      this.normalizeReportsService.getDividendsByStockExchange(
+        file,
+        stockExchange,
+      );
+
+    const dividends =
+      await this.dividendService.processDividends(corporateActions);
+
+    return this.dividendService.calculateDividendReport(dividends);
   }
 
   async getReports(userId: User['id']) {
