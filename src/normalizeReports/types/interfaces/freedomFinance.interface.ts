@@ -6,9 +6,17 @@ export interface FreedomFinanceCorporateAction {
   type: string;
   type_id: FreedomFinanceCorporateActionTypeId;
   amount: number;
+  amount_per_one: number;
   ticker: string;
   isin: string;
   currency: string;
+  ex_date: string;
+  external_tax: string | number;
+  external_tax_currency: string;
+  tax_amount: string | number;
+  tax_currency: string;
+  q_on_ex_date: string | number;
+  comment: string;
 }
 
 export interface FreedomFinanceTrade {

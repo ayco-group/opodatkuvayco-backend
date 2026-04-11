@@ -1,6 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { NormalizeTradesService } from '../normalizeTrades/normalizeTrades.service';
-import { FreedomFinanceReport } from './types/interfaces/freedomFinance.interface';
+import {
+  FreedomFinanceCorporateAction,
+  FreedomFinanceReport,
+} from './types/interfaces/freedomFinance.interface';
 import { IbkrReport } from './types/interfaces/ibkr.interface';
 import { Report } from 'src/report/types/interfaces/report.interface';
 import { Trade } from 'src/report/types/interfaces/trade.interface';
@@ -67,6 +70,32 @@ export class NormalizeReportsService {
         StockExchangeEnum.IBRK,
         [],
       ),
+    };
+  }
+
+  getDividendsByStockExchange(
+    report: any,
+    stockExchange: StockExchangeType,
+  ): { corporateActions: FreedomFinanceCorporateAction[] } {
+    const readedReport = this.reportReaderService.readReport(
+      report,
+      FileTypeEnum.JSON,
+    );
+
+    if (stockExchange === StockExchangeEnum.FREEDOM_FINANCE) {
+      return this.normalizeFreedomFinanceDividends(readedReport);
+    }
+
+    throw new BadRequestException(
+      `Dividend reports are not supported for ${stockExchange}`,
+    );
+  }
+
+  private normalizeFreedomFinanceDividends(report: FreedomFinanceReport): {
+    corporateActions: FreedomFinanceCorporateAction[];
+  } {
+    return {
+      corporateActions: report.corporate_actions?.detailed || [],
     };
   }
 }
