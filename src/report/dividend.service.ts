@@ -1,16 +1,36 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { CurrencyRateService } from 'src/currencyExchange/currencyRate.service';
 import { FreedomFinanceCorporateAction } from 'src/normalizeReports/types/interfaces/freedomFinance.interface';
 import {
   Dividend,
   DividendReport,
 } from './types/interfaces/dividend.interface';
-import { MILITARY_FEE, TAX_FEE } from './consts/tax-fee-percentages';
+import {
+  DEFAULT_DIVIDENDS_MILITARY_FEE,
+  DEFAULT_DIVIDENDS_TAX_FEE,
+  TAX_CONFIG_KEYS,
+} from './consts/tax-fee-percentages';
 import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class DividendService {
-  constructor(private currencyRateService: CurrencyRateService) {}
+  private readonly dividendsTaxFee: number;
+  private readonly dividendsMilitaryFee: number;
+
+  constructor(
+    private currencyRateService: CurrencyRateService,
+    private configService: ConfigService,
+  ) {
+    this.dividendsTaxFee = this.configService.get<number>(
+      TAX_CONFIG_KEYS.DIVIDENDS_TAX_FEE,
+      DEFAULT_DIVIDENDS_TAX_FEE,
+    );
+    this.dividendsMilitaryFee = this.configService.get<number>(
+      TAX_CONFIG_KEYS.DIVIDENDS_MILITARY_FEE,
+      DEFAULT_DIVIDENDS_MILITARY_FEE,
+    );
+  }
 
   filterDividends(
     corporateActions: FreedomFinanceCorporateAction[],
@@ -72,8 +92,9 @@ export class DividendService {
       0,
     );
 
-    const pdfo = totalAmountUah > 0 ? totalAmountUah * TAX_FEE : 0;
-    const militaryFee = totalAmountUah > 0 ? totalAmountUah * MILITARY_FEE : 0;
+    const pdfo = totalAmountUah > 0 ? totalAmountUah * this.dividendsTaxFee : 0;
+    const militaryFee =
+      totalAmountUah > 0 ? totalAmountUah * this.dividendsMilitaryFee : 0;
 
     return {
       dividends: this.sortDividends(dividends),

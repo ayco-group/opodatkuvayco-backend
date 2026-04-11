@@ -20,7 +20,6 @@ import { JwtGuard } from '../auth/guards/jwt.quard';
 import { Report } from './entities/report.entity';
 import { UserRequest } from 'src/auth/types/userRequest';
 import { ReportDealsDto } from './dto/report-deals.dto';
-import { DividendReport } from './types/interfaces/dividend.interface';
 
 @ApiTags('Report')
 @Controller('report')
@@ -131,50 +130,6 @@ export class ReportController {
     return await this.reportService.processDemoReport({
       file,
       stockExhange: query.stockExchange,
-    });
-  }
-
-  @Post('create-dividend-report')
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      fileFilter: (req, file, callback) => {
-        if (file.mimetype === 'application/json') {
-          callback(null, true);
-        } else {
-          callback(
-            new BadRequestException(
-              `Invalid file type: ${file.mimetype}. Only JSON files are allowed for dividend reports.`,
-            ),
-            false,
-          );
-        }
-      },
-    }),
-  )
-  @UsePipes(new ValidationPipe({ transform: true }))
-  @ApiBody({
-    description:
-      'Upload JSON file containing Freedom Finance report with dividends',
-    required: true,
-    schema: {
-      type: 'object',
-      properties: {
-        file: {
-          type: 'string',
-          format: 'binary',
-          description: 'JSON file containing Freedom Finance report',
-        },
-      },
-    },
-  })
-  async processDividendReport(
-    @UploadedFile() file: Express.Multer.File,
-    @Query() query: ReportDealsDto,
-  ): Promise<DividendReport> {
-    return await this.reportService.processDividendReport({
-      file,
-      stockExchange: query.stockExchange,
     });
   }
 }
