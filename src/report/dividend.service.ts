@@ -7,7 +7,6 @@ import {
   DividendReport,
 } from './types/interfaces/dividend.interface';
 import {
-  DEFAULT_DIVIDENDS_MILITARY_FEE,
   DEFAULT_DIVIDENDS_TAX_FEE,
   TAX_CONFIG_KEYS,
 } from './consts/tax-fee-percentages';
@@ -22,13 +21,17 @@ export class DividendService {
     private currencyRateService: CurrencyRateService,
     private configService: ConfigService,
   ) {
-    this.dividendsTaxFee = this.configService.get<number>(
-      TAX_CONFIG_KEYS.DIVIDENDS_TAX_FEE,
-      DEFAULT_DIVIDENDS_TAX_FEE,
+    this.dividendsTaxFee = Number(
+      this.configService.get(
+        TAX_CONFIG_KEYS.DIVIDENDS_TAX_FEE,
+        DEFAULT_DIVIDENDS_TAX_FEE,
+      ),
     );
-    this.dividendsMilitaryFee = this.configService.get<number>(
-      TAX_CONFIG_KEYS.DIVIDENDS_MILITARY_FEE,
-      DEFAULT_DIVIDENDS_MILITARY_FEE,
+    this.dividendsMilitaryFee = Number(
+      this.configService.get(
+        TAX_CONFIG_KEYS.DIVIDENDS_TAX_FEE,
+        DEFAULT_DIVIDENDS_TAX_FEE,
+      ),
     );
   }
 
