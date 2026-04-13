@@ -8,7 +8,7 @@ import {
   ReportFromPreviousPeriod,
 } from './types/interfaces/report.interface';
 import {
-  DEFAULT_DEALS_MILITARY_FEE,
+  DEFAULT_MILITARY_FEE,
   DEFAULT_DEALS_TAX_FEE,
   TAX_CONFIG_KEYS,
 } from './consts/tax-fee-percentages';
@@ -38,8 +38,8 @@ export class ReportService {
       DEFAULT_DEALS_TAX_FEE,
     );
     this.dealsMilitaryFee = this.configService.get<number>(
-      TAX_CONFIG_KEYS.DEALS_MILITARY_FEE,
-      DEFAULT_DEALS_MILITARY_FEE,
+      TAX_CONFIG_KEYS.MILITARY_FEE,
+      DEFAULT_MILITARY_FEE,
     );
   }
 
