@@ -30,7 +30,7 @@ export class DividendService {
     );
     this.dividendsMilitaryFee = Number(
       this.configService.get(
-        TAX_CONFIG_KEYS.DIVIDENDS_TAX_FEE,
+        TAX_CONFIG_KEYS.MILITARY_FEE,
         DEFAULT_MILITARY_FEE,
       ),
     );

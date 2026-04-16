@@ -1,7 +1,7 @@
 // Default values (used as fallback if env variables are not set)
-export const DEFAULT_MILITARY_FEE = 0.015;
+export const DEFAULT_MILITARY_FEE = 0.05;
 export const DEFAULT_DEALS_TAX_FEE = 0.18;
-export const DEFAULT_DIVIDENDS_TAX_FEE = 0.095;
+export const DEFAULT_DIVIDENDS_TAX_FEE = 0.09;
 
 // Environment variable keys
 export const TAX_CONFIG_KEYS = {
