@@ -8,6 +8,7 @@ import {
 } from './types/interfaces/dividend.interface';
 import {
   DEFAULT_DIVIDENDS_TAX_FEE,
+  DEFAULT_MILITARY_FEE,
   TAX_CONFIG_KEYS,
 } from './consts/tax-fee-percentages';
 import { v4 as uuid } from 'uuid';
@@ -30,7 +31,7 @@ export class DividendService {
     this.dividendsMilitaryFee = Number(
       this.configService.get(
         TAX_CONFIG_KEYS.DIVIDENDS_TAX_FEE,
-        DEFAULT_DIVIDENDS_TAX_FEE,
+        DEFAULT_MILITARY_FEE,
       ),
     );
   }
