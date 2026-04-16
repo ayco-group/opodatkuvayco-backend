@@ -64,7 +64,7 @@ export class ReportService {
         const { groupedTrades, accountAtStart, accountAtEnd, dateStart } =
           this.getTradesReport(file, stockExchange);
 
-        return { groupedTrades, accountAtStart, accountAtEnd, dateStart };
+        return { groupedTrades, accountAtStart, accountAtEnd, dateStart, file };
       }),
       sort(
         (report1, report2) =>
@@ -177,8 +177,8 @@ export class ReportService {
     const deals = await tradeService.getDeals();
 
     // Process dividends from all files
-    const dividendReport = await this.processDividendsFromFiles(
-      files,
+    const dividendReport = await this.processDividendsFromFile(
+      firstReport.file,
       stockExchange,
     );
 
@@ -203,27 +203,24 @@ export class ReportService {
     return deals;
   }
 
-  private async processDividendsFromFiles(
-    files: Express.Multer.File[],
+  private async processDividendsFromFile(
+    file: Express.Multer.File,
     stockExchange: StockExchangeEnum,
   ): Promise<DividendReport | null> {
     if (stockExchange !== StockExchangeEnum.FREEDOM_FINANCE) {
       return null;
     }
 
-    const allDividends = await Promise.all(
-      files.map(async (file) => {
-        const { corporateActions } =
-          this.normalizeReportsService.getDividendsByStockExchange(
-            file,
-            stockExchange,
-          );
+    const { corporateActions } =
+      this.normalizeReportsService.getDividendsByStockExchange(
+        file,
+        stockExchange,
+      );
 
-        return this.dividendService.processDividends(corporateActions);
-      }),
-    );
+    const dividens =
+      await this.dividendService.processDividends(corporateActions);
 
-    const flatDividends = allDividends.flat();
+    const flatDividends = dividens.flat();
 
     if (flatDividends.length === 0) {
       return null;
