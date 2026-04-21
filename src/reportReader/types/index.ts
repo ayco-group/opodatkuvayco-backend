@@ -1,3 +1,3 @@
 import { FileTypeEnum } from '../consts';
 
-export type FileType = FileTypeEnum.JSON | FileTypeEnum.XML;
+export type FileType = FileTypeEnum.JSON | FileTypeEnum.XML | FileTypeEnum.CSV;

@@ -6,7 +6,6 @@ import { NormalizeTradesService } from 'src/normalizeTrades/normalizeTrades.serv
 import { NormalizeReportsModule } from 'src/normalizeReports/normalizeReports.module';
 import { NormalizeReportsService } from 'src/normalizeReports/normalizeReports.service';
 import { ReportReaderModule } from 'src/reportReader/reportReader.module';
-import { ReportReaderService } from 'src/reportReader/reportReader.service';
 import { CurrencyRateService } from 'src/currencyExchange/currencyRate.service';
 import { CurrencyRateModule } from 'src/currencyExchange/currencyRate.module';
 import { DateFormatModule } from 'src/dateTimeFormat/dateFormat.module';
@@ -38,7 +37,6 @@ import { DividendService } from './dividend.service';
     CurrencyRateService,
     NormalizeTradesService,
     NormalizeReportsService,
-    ReportReaderService,
     DateTimeFormatService,
     DividendService,
   ],

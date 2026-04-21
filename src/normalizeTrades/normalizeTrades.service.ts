@@ -5,6 +5,8 @@ import { FreedomFinanceTrade } from 'src/normalizeReports/types/interfaces/freed
 import { StockExchangeType } from 'src/normalizeReports/types/types/stock-exchange.type';
 import { StockExchangeEnum } from './constants/enums';
 import { TradesByStockExchange } from './types/types/stockExchange';
+import { IbkrCsvRawTrade } from 'src/reportReader/types/ibkr-csv-raw.interface';
+import { parseIbkrNumber } from 'src/normalizeReports/utils/parse-ibkr-number.util';
 
 @Injectable()
 export class NormalizeTradesService {
@@ -14,6 +16,7 @@ export class NormalizeTradesService {
     [StockExchangeEnum.FREEDOM_FINANCE]:
       this.normalizedFreedomFinanceTrades.bind(this),
     [StockExchangeEnum.IBRK]: this.normalizedIbkrTrades.bind(this),
+    [StockExchangeEnum.IBRK_CSV]: this.normalizedIbkrCsvTrades.bind(this),
   };
 
   getNormalizedTrades(
@@ -61,6 +64,21 @@ export class NormalizeTradesService {
     }));
 
     return [...conformingTrades, ...normalizedTrades];
+  }
+
+  private normalizedIbkrCsvTrades(trades: IbkrCsvRawTrade[]): Trade[] {
+    return trades.map((trade) => {
+      const quantity = parseIbkrNumber(trade['Quantity']);
+      return {
+        ticker: trade['Symbol'],
+        currency: trade['Currency'],
+        date: trade['Date/Time'],
+        price: parseIbkrNumber(trade['T. Price']),
+        commission: parseIbkrNumber(trade['Comm/Fee']),
+        quantity,
+        operation: quantity > 0 ? 'buy' : 'sell',
+      };
+    });
   }
 
   isITrade(trade: unknown): trade is Trade {

@@ -43,13 +43,15 @@ export class ReportController {
       fileFilter: (req, file, callback) => {
         if (
           file.mimetype === 'application/json' ||
-          file.mimetype === 'application/xml'
+          file.mimetype === 'application/xml' ||
+          file.mimetype === 'text/csv' ||
+          file.mimetype === 'application/vnd.ms-excel'
         ) {
           callback(null, true);
         } else {
           callback(
             new BadRequestException(
-              `Invalid file type: ${file.mimetype}. Only JSON and XML files are allowed.`,
+              `Invalid file type: ${file.mimetype}. Only JSON, XML and CSV files are allowed.`,
             ),
             false,
           );
@@ -94,13 +96,15 @@ export class ReportController {
       fileFilter: (req, file, callback) => {
         if (
           file.mimetype === 'application/json' ||
-          file.mimetype === 'application/xml'
+          file.mimetype === 'application/xml' ||
+          file.mimetype === 'text/csv' ||
+          file.mimetype === 'application/vnd.ms-excel'
         ) {
           callback(null, true);
         } else {
           callback(
             new BadRequestException(
-              `Invalid file type: ${file.mimetype}. Only JSON and XML files are allowed.`,
+              `Invalid file type: ${file.mimetype}. Only JSON, XML and CSV files are allowed.`,
             ),
             false,
           );
