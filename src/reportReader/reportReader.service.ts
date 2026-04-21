@@ -1,10 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { XMLParser } from 'fast-xml-parser';
+import { IbkrCsvParserService } from './ibkr-csv-parser.service';
 import { FileTypeEnum } from './consts';
 import { FileType } from './types';
 
 @Injectable()
 export class ReportReaderService {
+  constructor(private readonly ibkrCsvParser: IbkrCsvParserService) {}
+
   private xmlParser = new XMLParser({
     allowBooleanAttributes: true,
     attributeNamePrefix: '',
@@ -14,9 +17,8 @@ export class ReportReaderService {
   private PARSER_BY_FILE_MAP = {
     [FileTypeEnum.JSON]: this.parseJSON.bind(this),
     [FileTypeEnum.XML]: this.parseXml.bind(this),
+    [FileTypeEnum.CSV]: this.parseCSV.bind(this),
   };
-
-  constructor() {}
 
   readReport(file: Express.Multer.File, fileType: FileType) {
     return this.PARSER_BY_FILE_MAP[fileType](file);
@@ -36,5 +38,9 @@ export class ReportReaderService {
     } catch (error) {
       throw new Error('Error parsing json');
     }
+  }
+
+  private parseCSV(file: Express.Multer.File) {
+    return this.ibkrCsvParser.parse(file.buffer);
   }
 }

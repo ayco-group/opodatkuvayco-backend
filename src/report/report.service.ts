@@ -44,7 +44,7 @@ export class ReportService {
   }
 
   getTradesReport(file: Express.Multer.File, stockExchange: StockExchangeEnum) {
-    const { trades, accountAtStart, accountAtEnd, dateStart } =
+    const { trades, accountAtStart, accountAtEnd, dateStart, extra } =
       this.normalizeReportsService.getReportByStockExchange(
         file,
         stockExchange,
@@ -52,7 +52,13 @@ export class ReportService {
 
     const groupedTrades = this.dealsService.groupTradesByTicker(trades);
 
-    return { groupedTrades, accountAtStart, accountAtEnd, dateStart };
+    return {
+      groupedTrades,
+      accountAtStart,
+      accountAtEnd,
+      dateStart,
+      extra,
+    };
   }
 
   getTradesByMultipleFiles(
@@ -61,10 +67,21 @@ export class ReportService {
   ) {
     return pipe(
       map((file: Express.Multer.File) => {
-        const { groupedTrades, accountAtStart, accountAtEnd, dateStart } =
-          this.getTradesReport(file, stockExchange);
+        const {
+          groupedTrades,
+          accountAtStart,
+          accountAtEnd,
+          dateStart,
+          extra,
+        } = this.getTradesReport(file, stockExchange);
 
-        return { groupedTrades, accountAtStart, accountAtEnd, dateStart, file };
+        return {
+          groupedTrades,
+          accountAtStart,
+          accountAtEnd,
+          dateStart,
+          extra,
+        };
       }),
       sort(
         (report1, report2) =>
@@ -149,6 +166,23 @@ export class ReportService {
     user: User;
     stockExchange: StockExchangeEnum;
   }) {
+    const deals =
+      stockExchange === StockExchangeEnum.IBRK_CSV
+        ? await this.processIbkrCsvFiles(files, stockExchange)
+        : await this.processFreedomFinanceFiles(files, stockExchange);
+
+    const dividendReport = await this.processDividendsFromFiles(
+      files,
+      stockExchange,
+    );
+
+    return this.getSummary(deals, dividendReport);
+  }
+
+  private async processFreedomFinanceFiles(
+    files: Express.Multer.File[],
+    stockExchange: StockExchangeEnum,
+  ) {
     const [firstReport, ...restReports] = this.getTradesByMultipleFiles(
       files,
       stockExchange,
@@ -174,15 +208,29 @@ export class ReportService {
 
     tradeService.setTrades(prevTrades.trades);
 
-    const deals = await tradeService.getDeals();
+    return tradeService.getDeals();
+  }
 
-    // Process dividends from all files
-    const dividendReport = await this.processDividendsFromFile(
-      firstReport.file,
-      stockExchange,
+  private async processIbkrCsvFiles(
+    files: Express.Multer.File[],
+    stockExchange: StockExchangeEnum,
+  ) {
+    // Sort oldest → newest so FIFO processes earlier purchases before later sells
+    const reports = this.getTradesByMultipleFiles(files, stockExchange).sort(
+      (a, b) =>
+        new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime(),
     );
 
-    return this.getSummary(deals, dividendReport);
+    const mergedTrades: GroupedTrades = reports.reduce(
+      (acc, report) => mergeDeepWith(concat, acc, report.groupedTrades),
+      {} as GroupedTrades,
+    );
+
+    const tradeService = new TradeService(this.dealsService, {
+      trades: mergedTrades,
+    });
+
+    return tradeService.getDeals();
   }
 
   async processDemoReport({
@@ -203,24 +251,35 @@ export class ReportService {
     return deals;
   }
 
-  private async processDividendsFromFile(
-    file: Express.Multer.File,
+  private async processDividendsFromFiles(
+    files: Express.Multer.File[],
     stockExchange: StockExchangeEnum,
   ): Promise<DividendReport | null> {
-    if (stockExchange !== StockExchangeEnum.FREEDOM_FINANCE) {
+    const supportedExchanges = [
+      StockExchangeEnum.FREEDOM_FINANCE,
+      StockExchangeEnum.IBRK_CSV,
+    ];
+
+    if (!supportedExchanges.includes(stockExchange)) {
       return null;
     }
 
-    const { corporateActions } =
-      this.normalizeReportsService.getDividendsByStockExchange(
-        file,
-        stockExchange,
-      );
+    const allDividends = await Promise.all(
+      files.map(async (file) => {
+        const result = this.normalizeReportsService.getDividendsByStockExchange(
+          file,
+          stockExchange,
+        );
 
-    const dividens =
-      await this.dividendService.processDividends(corporateActions);
+        if (result.source === 'ibkr_csv') {
+          return this.dividendService.processIbkrCsvDividends(result.dividends);
+        }
 
-    const flatDividends = dividens.flat();
+        return this.dividendService.processDividends(result.corporateActions);
+      }),
+    );
+
+    const flatDividends = allDividends.flat();
 
     if (flatDividends.length === 0) {
       return null;

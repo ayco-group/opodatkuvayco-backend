@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CurrencyRateService } from 'src/currencyExchange/currencyRate.service';
 import { FreedomFinanceCorporateAction } from 'src/normalizeReports/types/interfaces/freedomFinance.interface';
+import { IbkrCsvDividend } from 'src/normalizeReports/types/interfaces/ibkr-csv.interface';
 import {
   Dividend,
   DividendReport,
@@ -88,6 +89,38 @@ export class DividendService {
     );
 
     return dividends;
+  }
+
+  async processIbkrCsvDividends(
+    rawDividends: IbkrCsvDividend[],
+  ): Promise<Dividend[]> {
+    return Promise.all(
+      rawDividends.map(async (d) => {
+        const { rate } = await this.currencyRateService.getCurrencyExchange(
+          d.currency,
+          d.date,
+        );
+
+        // Description format: "AAPL(US0378331005) Cash Dividend USD 0.25 per Share (Ordinary Dividend)"
+        const ticker = d.description.split('(')[0].trim();
+
+        return {
+          id: uuid(),
+          date: new Date(d.date),
+          ticker,
+          isin: '',
+          currency: d.currency,
+          amount: d.amount,
+          amountPerOne: 0,
+          quantity: 0,
+          externalTax: 0,
+          externalTaxCurrency: d.currency,
+          rate,
+          amountUah: d.amount * rate,
+          externalTaxUah: 0,
+        };
+      }),
+    );
   }
 
   calculateDividendReport(dividends: Dividend[]): DividendReport {
