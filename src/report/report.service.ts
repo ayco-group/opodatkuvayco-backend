@@ -230,7 +230,17 @@ export class ReportService {
       trades: mergedTrades,
     });
 
-    return tradeService.getDeals();
+    const allDeals = await tradeService.getDeals();
+
+    if (allDeals.length === 0) return allDeals;
+
+    const lastYear = Math.max(
+      ...reports.map((r) => new Date(r.dateStart).getFullYear()),
+    );
+
+    return allDeals.filter(
+      (d) => new Date(d.sale.date).getFullYear() === lastYear,
+    );
   }
 
   async processDemoReport({
@@ -283,6 +293,17 @@ export class ReportService {
 
     if (flatDividends.length === 0) {
       return null;
+    }
+
+    if (stockExchange === StockExchangeEnum.IBRK_CSV) {
+      const lastYear = Math.max(
+        ...flatDividends.map((d) => new Date(d.date).getFullYear()),
+      );
+      return this.dividendService.calculateDividendReport(
+        flatDividends.filter(
+          (d) => new Date(d.date).getFullYear() === lastYear,
+        ),
+      );
     }
 
     return this.dividendService.calculateDividendReport(flatDividends);
