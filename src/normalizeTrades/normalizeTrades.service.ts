@@ -31,15 +31,19 @@ export class NormalizeTradesService {
       (trade) => !this.isITrade(trade),
     ) as FreedomFinanceTrade[];
 
-    const mappedTrades: Trade[] = nonConformingTrades.map((trade) => ({
-      ticker: trade.instr_nm?.split('.').at(0),
-      price: trade.p,
-      commission: trade.commission,
-      operation: trade.operation,
-      quantity: trade.q,
-      date: trade.date,
-      currency: trade.curr_c,
-    }));
+    const mappedTrades: Trade[] = nonConformingTrades.map((trade) => {
+      let ticker = trade.instr_nm?.split('.').at(0) || '';
+      ticker = ticker.replace(/IPO/gi, '').trim();
+      return {
+        ticker,
+        price: trade.p,
+        commission: trade.commission,
+        operation: trade.operation,
+        quantity: trade.q,
+        date: trade.date,
+        currency: trade.curr_c,
+      };
+    });
 
     return [...conformingTrades, ...mappedTrades];
   }
