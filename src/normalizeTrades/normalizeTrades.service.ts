@@ -33,7 +33,8 @@ export class NormalizeTradesService {
 
     const mappedTrades: Trade[] = nonConformingTrades.map((trade) => {
       let ticker = trade.instr_nm?.split('.').at(0) || '';
-      ticker = ticker.replace(/IPO/gi, '').trim();
+      ticker = ticker.replace(/_IPO/gi, '').trim();
+
       return {
         ticker,
         price: trade.p,
