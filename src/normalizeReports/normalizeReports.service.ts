@@ -78,12 +78,18 @@ export class NormalizeReportsService {
       ),
       accountAtStart: Object.fromEntries(
         report.account_at_start.account.positions_from_ts?.ps.pos.map(
-          (position) => [position.i.split('.').at(0), position.q],
+          (position) => [
+            position.i.split('.').at(0).replace(/_IPO/gi, '').trim(),
+            position.q,
+          ],
         ),
       ),
       accountAtEnd: Object.fromEntries(
         report.account_at_end.account.positions_from_ts.ps.pos.map(
-          (position) => [position.i.split('.').at(0), position.q],
+          (position) => [
+            position.i.split('.').at(0).replace(/_IPO/gi, '').trim(),
+            position.q,
+          ],
         ),
       ),
       extra: {},
