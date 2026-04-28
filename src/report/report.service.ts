@@ -295,18 +295,13 @@ export class ReportService {
       return null;
     }
 
-    if (stockExchange === StockExchangeEnum.IBRK_CSV) {
-      const lastYear = Math.max(
-        ...flatDividends.map((d) => new Date(d.date).getFullYear()),
-      );
-      return this.dividendService.calculateDividendReport(
-        flatDividends.filter(
-          (d) => new Date(d.date).getFullYear() === lastYear,
-        ),
-      );
-    }
+    const lastYear = Math.max(
+      ...flatDividends.map((d) => new Date(d.date).getFullYear()),
+    );
 
-    return this.dividendService.calculateDividendReport(flatDividends);
+    return this.dividendService.calculateDividendReport(
+      flatDividends.filter((d) => new Date(d.date).getFullYear() === lastYear),
+    );
   }
 
   async getReports(userId: User['id']) {
