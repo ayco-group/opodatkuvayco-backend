@@ -158,14 +158,59 @@ export class ReportService {
     );
   }
 
+  private detectStockExchange(file: Express.Multer.File): StockExchangeEnum {
+    const content = file.buffer.toString('utf-8');
+
+    try {
+      const parsed = JSON.parse(content);
+      if (
+        typeof parsed.date_start === 'string' &&
+        Array.isArray(parsed.trades?.detailed)
+      ) {
+        return StockExchangeEnum.FREEDOM_FINANCE;
+      }
+    } catch {
+      // not JSON
+    }
+
+    // IBKR CSV files always contain section rows starting with "Statement,Header" or "Statement,Data"
+    if (/^Statement,(Header|Data)/m.test(content)) {
+      return StockExchangeEnum.IBRK_CSV;
+    }
+
+    throw new BadRequestException(
+      'Unable to detect stock exchange. Supported formats: Freedom Finance (JSON) and IBKR (CSV).',
+    );
+  }
+
+  private detectStockExchangeFromFiles(
+    files: Express.Multer.File[],
+  ): StockExchangeEnum {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files provided');
+    }
+
+    const stockExchange = this.detectStockExchange(files[0]);
+
+    for (const file of files.slice(1)) {
+      if (this.detectStockExchange(file) !== stockExchange) {
+        throw new BadRequestException(
+          'All uploaded files must be from the same stock exchange (all JSON or all CSV)',
+        );
+      }
+    }
+
+    return stockExchange;
+  }
+
   async processMultipleFiles({
     files,
-    stockExchange,
   }: {
     files: Express.Multer.File[];
     user: User;
-    stockExchange: StockExchangeEnum;
   }) {
+    const stockExchange = this.detectStockExchangeFromFiles(files);
+
     const deals =
       stockExchange === StockExchangeEnum.IBRK_CSV
         ? await this.processIbkrCsvFiles(files, stockExchange)
@@ -243,14 +288,9 @@ export class ReportService {
     );
   }
 
-  async processDemoReport({
-    file,
-    stockExhange,
-  }: {
-    file: Express.Multer.File;
-    stockExhange: StockExchangeEnum;
-  }) {
-    const { groupedTrades } = this.getTradesReport(file, stockExhange);
+  async processDemoReport({ file }: { file: Express.Multer.File }) {
+    const stockExchange = this.detectStockExchange(file);
+    const { groupedTrades } = this.getTradesReport(file, stockExchange);
 
     const tradeService = new TradeService(this.dealsService, {
       trades: groupedTrades,
