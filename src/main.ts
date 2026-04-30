@@ -64,9 +64,14 @@ async function bootstrap() {
   app.use(
     '/docs*',
     basicAuth({
-      authorizer: (username: string, password: string) =>
-        username === configService.get('SWAGGER_HTTP_BASIC_AUTH_USERNAME') &&
-        password === configService.get('SWAGGER_HTTP_BASIC_AUTH_PASSWORD'),
+      authorizer: (username: string, password: string) => {
+        return configService.get('NODE_ENV') === 'local'
+          ? true
+          : username ===
+              configService.get('SWAGGER_HTTP_BASIC_AUTH_USERNAME') &&
+              password ===
+                configService.get('SWAGGER_HTTP_BASIC_AUTH_PASSWORD');
+      },
       challenge: true,
     }),
   );

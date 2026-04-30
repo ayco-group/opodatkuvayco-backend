@@ -66,14 +66,6 @@ jobs:
       - name: Build Project
         run: npm run build
 
-      #      - name: Create .env file
-      #        run: |
-      #          cat > .env << EOL
-      #          GOOGLE_AUTH_CLIENT_ID=${{ secrets.GOOGLE_AUTH_CLIENT_ID }}
-      #          GOOGLE_AUTH_CLIENT_SECRET=${{ secrets.GOOGLE_AUTH_CLIENT_SECRET }}
-      #          GOOGLE_AUTH_REDIRECT_URL=${{ secrets.GOOGLE_AUTH_REDIRECT_URL }}
-      #          EOL
-
       - name: Deploy Project
         uses: burnett01/rsync-deployments@5.2.1
         with:
